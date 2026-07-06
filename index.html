@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>攝影集語音導覽</title>
-    <!-- 改為引入 Google Fonts 的「思源黑體 (Noto Sans TC)」 -->
+    <!-- 引入 Google Fonts 思源黑體 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,13 +12,13 @@
             --text-color: #3b3a36;
             --accent-color: #d97736;
             --border-color: #dcd8ce;
+            --player-icon-color: #3b3a36;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            /* 全面套用思源黑體，若網路問題載入失敗，則退回蘋果或微軟系統預設的無襯線黑體 */
             font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
         }
 
@@ -42,7 +42,7 @@
 
         h1 {
             font-size: 1.4rem;
-            font-weight: 500; /* 黑體稍微加粗一點比較好看 */
+            font-weight: 500;
             letter-spacing: 5px;
             margin-bottom: 8px;
             color: var(--text-color);
@@ -55,7 +55,6 @@
             letter-spacing: 3px;
             color: #85827d;
             margin-bottom: 30px;
-            /* 已經刪除這裡干擾的 font-family 設定 */
         }
 
         .input-group {
@@ -121,7 +120,7 @@
 
         .photo-title {
             font-size: 1.25rem;
-            font-weight: 700; /* 標題用粗體凸顯層次 */
+            font-weight: 700;
             margin-bottom: 15px;
             letter-spacing: 1px;
         }
@@ -135,36 +134,108 @@
             margin-bottom: 30px;
         }
 
-        .btn-wrapper {
-            text-align: center;
+        /* --- 進階播放器樣式 --- */
+        .custom-player {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
         }
 
-        .audio-btn {
-            background: transparent;
-            border: 1px solid var(--text-color);
-            color: var(--text-color);
-            padding: 12px 35px;
-            font-size: 0.9rem;
-            letter-spacing: 2px;
+        .player-main-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .play-pause-btn {
+            background: none;
+            border: none;
             cursor: pointer;
-            border-radius: 30px;
-            transition: all 0.3s ease;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            /* 已經刪除這裡干擾的 font-family 設定 */
+            width: 32px;
+            height: 32px;
+            color: var(--player-icon-color);
         }
 
-        .audio-btn:hover, .audio-btn:active {
+        .play-pause-btn svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+        }
+
+        /* 自訂進度條 (Range Input) */
+        .progress-bar {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
             background: var(--text-color);
-            color: #f4f1ea;
+            cursor: pointer;
+            transition: transform 0.1s;
         }
 
-        .audio-btn.playing {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #fff;
+        .progress-bar::-webkit-slider-thumb:active {
+            transform: scale(1.3);
+        }
+
+        .time-display {
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .player-sub-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: #85827d;
+        }
+
+        .sub-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #85827d;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+
+        .sub-btn:hover {
+            color: var(--text-color);
+        }
+
+        .sub-btn.active {
+            color: var(--text-color);
+            font-weight: 700;
+        }
+
+        .divider {
+            color: var(--border-color);
         }
 
         .error-msg {
@@ -196,10 +267,32 @@
             <div class="photo-title" id="photoTitle"></div>
             <div class="photo-desc" id="photoDesc"></div>
             
-            <div class="btn-wrapper">
-                <button class="audio-btn" id="playBtn">
-                    <span id="btnIcon">▶</span> <span id="btnText">播放故事</span>
-                </button>
+            <!-- 進階播放器 HTML 結構 -->
+            <div class="custom-player" id="customPlayer">
+                <div class="player-main-row">
+                    <button class="play-pause-btn" id="playPauseBtn">
+                        <!-- 預設顯示播放 Icon -->
+                        <svg id="iconPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <!-- 暫停 Icon (先隱藏) -->
+                        <svg id="iconPause" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <input type="range" class="progress-bar" id="progressBar" value="0" min="0" max="100">
+                    <div class="time-display" id="timeDisplay">00:00</div>
+                </div>
+                
+                <div class="player-sub-row">
+                    <button class="sub-btn" id="rewindBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                        10
+                    </button>
+                    <button class="sub-btn" id="forwardBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8h-2c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6v4l5-5-5-5v4z"/></svg>
+                        10
+                    </button>
+                    <span class="divider">|</span>
+                    <button class="sub-btn active" id="speed1Btn">x 1</button>
+                    <button class="sub-btn" id="speed15Btn">x 1.5</button>
+                </div>
             </div>
         </div>
     </div>
@@ -207,37 +300,71 @@
     <script>
         const photoStories = {
             "1": {
-                title: "01. 霧中的山脊",
-                text: "這張照片拍攝於清晨的中央山脈。當時氣溫很低，陽光突然穿透了雲層，短暫地照亮了這道山脊。",
+                title: "01. 十八歲的夏天",
+                text: "這張照片記錄了前十八年的時光切片。當時我帶著裝滿 Kodak Gold 200 的底片機，試圖捕捉那些即將流逝的光影與空氣感。",
                 audio: "audio/01.mp3",
                 image: "images/01.jpg"
             },
             "2": {
                 title: "02. 暮色海岸",
-                text: "使用正片拍攝的黃昏。海浪拍打在岩石上，呈現出底片特有的神祕藍調。",
+                text: "使用 Velvia 50 正片拍攝的黃昏。海浪拍打在岩石上，呈現出底片特有的高飽和與神祕藍調，是數位轉譯難以完全復刻的質感。",
                 audio: "audio/02.mp3",
                 image: "images/02.jpg"
             }
         };
 
+        // DOM 元素抓取
         const inputEl = document.getElementById('photoNumber');
         const cardEl = document.getElementById('storyCard');
         const titleEl = document.getElementById('photoTitle');
         const descEl = document.getElementById('photoDesc');
         const imgEl = document.getElementById('photoImage');
         const errorEl = document.getElementById('errorMsg');
-        const playBtn = document.getElementById('playBtn');
-        const btnIcon = document.getElementById('btnIcon');
-        const btnText = document.getElementById('btnText');
+        
+        // 播放器控制元素
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const iconPlay = document.getElementById('iconPlay');
+        const iconPause = document.getElementById('iconPause');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const rewindBtn = document.getElementById('rewindBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const speed1Btn = document.getElementById('speed1Btn');
+        const speed15Btn = document.getElementById('speed15Btn');
 
         let currentAudio = null; 
         let isPlaying = false;
         let currentPhotoId = null;
+        let isDragging = false; // 判斷使用者是否正在拖曳進度條
 
+        // 格式化時間 (將秒數轉為 MM:SS)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "00:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // 切換按鈕的 UI 狀態
+        function setPlayState(playing) {
+            isPlaying = playing;
+            if (playing) {
+                iconPlay.style.display = 'none';
+                iconPause.style.display = 'block';
+            } else {
+                iconPlay.style.display = 'block';
+                iconPause.style.display = 'none';
+            }
+        }
+
+        // 初始化或切換照片
         inputEl.addEventListener('input', (e) => {
             const num = e.target.value.trim();
             
-            if (isPlaying) stopAudio();
+            if (currentAudio) {
+                currentAudio.pause();
+                setPlayState(false);
+            }
 
             if (num === "") {
                 cardEl.classList.remove('active');
@@ -248,6 +375,7 @@
             if (photoStories[num]) {
                 currentPhotoId = num;
                 
+                // 圖片處理
                 if (photoStories[num].image) {
                     imgEl.src = photoStories[num].image;
                     imgEl.style.display = 'block';
@@ -255,8 +383,15 @@
                     imgEl.style.display = 'none';
                 }
 
+                // 文字與進度條初始化
                 titleEl.textContent = photoStories[num].title;
                 descEl.textContent = photoStories[num].text;
+                progressBar.value = 0;
+                timeDisplay.textContent = "00:00";
+                
+                // 預載入新的音檔以獲取總長度 (但不自動播放)
+                loadNewAudio(photoStories[num].audio);
+
                 cardEl.classList.add('active');
                 errorEl.style.display = 'none';
             } else {
@@ -266,47 +401,88 @@
             }
         });
 
-        playBtn.addEventListener('click', () => {
-            if (!currentPhotoId || !photoStories[currentPhotoId]) return;
+        // 載入音檔並綁定事件
+        function loadNewAudio(url) {
+            currentAudio = new Audio(url);
+            
+            // 當音樂播放位置更新時，連動進度條
+            currentAudio.addEventListener('timeupdate', () => {
+                if (!isDragging && !isNaN(currentAudio.duration)) {
+                    const progressPercent = (currentAudio.currentTime / currentAudio.duration) * 100;
+                    progressBar.value = progressPercent;
+                    timeDisplay.textContent = formatTime(currentAudio.currentTime);
+                }
+            });
 
+            // 播放完畢自動重置
+            currentAudio.addEventListener('ended', () => {
+                setPlayState(false);
+                currentAudio.currentTime = 0;
+                progressBar.value = 0;
+            });
+
+            // 套用目前的語速設定
+            const currentSpeed = speed15Btn.classList.contains('active') ? 1.5 : 1;
+            currentAudio.playbackRate = currentSpeed;
+        }
+
+        // 主播放/暫停按鈕邏輯
+        playPauseBtn.addEventListener('click', () => {
+            if (!currentAudio) return;
+            
             if (isPlaying) {
-                stopAudio();
+                currentAudio.pause();
+                setPlayState(false);
             } else {
-                playAudio(photoStories[currentPhotoId].audio);
+                currentAudio.play().catch(e => {
+                    alert("無法播放音檔，請確認音檔路徑是否正確。");
+                });
+                setPlayState(true);
             }
         });
 
-        function playAudio(audioUrl) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
+        // 進度條拖曳邏輯
+        progressBar.addEventListener('input', () => {
+            isDragging = true;
+            if (currentAudio && !isNaN(currentAudio.duration)) {
+                const seekTime = (progressBar.value / 100) * currentAudio.duration;
+                timeDisplay.textContent = formatTime(seekTime);
             }
+        });
 
-            currentAudio = new Audio(audioUrl);
-            currentAudio.play().catch(e => {
-                alert("無法播放音檔，請確認 audio 資料夾與 mp3 檔案是否已正確上傳。");
-                stopAudio();
-            });
+        progressBar.addEventListener('change', () => {
+            isDragging = false;
+            if (currentAudio && !isNaN(currentAudio.duration)) {
+                const seekTime = (progressBar.value / 100) * currentAudio.duration;
+                currentAudio.currentTime = seekTime;
+            }
+        });
 
-            isPlaying = true;
-            playBtn.classList.add('playing');
-            btnIcon.textContent = "■";
-            btnText.textContent = "暫停播放";
+        // 快轉與倒退 10 秒
+        rewindBtn.addEventListener('click', () => {
+            if (currentAudio) currentAudio.currentTime = Math.max(0, currentAudio.currentTime - 10);
+        });
 
-            currentAudio.onended = () => {
-                stopAudio();
-            };
+        forwardBtn.addEventListener('click', () => {
+            if (currentAudio && !isNaN(currentAudio.duration)) {
+                currentAudio.currentTime = Math.min(currentAudio.duration, currentAudio.currentTime + 10);
+            }
+        });
+
+        // 語速控制
+        function setSpeed(speed) {
+            if (currentAudio) currentAudio.playbackRate = speed;
+            if (speed === 1) {
+                speed1Btn.classList.add('active');
+                speed15Btn.classList.remove('active');
+            } else {
+                speed1Btn.classList.remove('active');
+                speed15Btn.classList.add('active');
+            }
         }
 
-        function stopAudio() {
-            if (currentAudio) {
-                currentAudio.pause();
-            }
-            isPlaying = false;
-            playBtn.classList.remove('playing');
-            btnIcon.textContent = "▶";
-            btnText.textContent = "播放故事";
-        }
+        speed1Btn.addEventListener('click', () => setSpeed(1));
+        speed15Btn.addEventListener('click', () => setSpeed(1.5));
     </script>
 </body>
 </html>
