@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pre - 攝影集語音導覽</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&display=swap" rel="stylesheet">
+    <title>攝影集語音導覽</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* 底片攝影集風格配色 */
-            --bg-color: #f4f1ea;     /* 溫潤的相紙微黃色 */
-            --text-color: #3b3a36;   /* 柔和的深灰，降低數位感 */
-            --accent-color: #d97736; /* 類似 Gold 200 的暖橘黃色 */
+            var(--bg-color): #f4f1ea;
+            --text-color: #3b3a36;
+            --accent-color: #d97736;
             --border-color: #dcd8ce;
         }
 
@@ -22,22 +21,22 @@
         }
 
         body {
-            background-color: var(--bg-color);
+            background-color: #f4f1ea;
             color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            /* 改為從頂部開始排列，保留更多空間給照片 */
+            justify-content: flex-start; 
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
             -webkit-font-smoothing: antialiased;
         }
 
         .container {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
-            padding: 40px 20px;
         }
 
         h1 {
@@ -54,16 +53,17 @@
             font-weight: 300;
             letter-spacing: 3px;
             color: #85827d;
-            margin-bottom: 45px;
+            margin-bottom: 30px;
+            font-family: sans-serif;
         }
 
         .input-group {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         input[type="number"] {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             font-size: 1.2rem;
             border: none;
             border-bottom: 1px solid var(--border-color);
@@ -79,7 +79,6 @@
             border-bottom: 1px solid var(--accent-color);
         }
 
-        /* 隱藏數字輸入框的上下箭頭 */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -87,12 +86,11 @@
         }
 
         .story-card {
-            margin-top: 20px;
             opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.5s ease;
-            min-height: 150px;
+            transform: translateY(15px);
+            transition: all 0.6s ease;
             display: none;
+            text-align: left; /* 讓文字靠左對齊，像美術館說明牌 */
         }
 
         .story-card.active {
@@ -101,9 +99,30 @@
             display: block;
         }
 
+        /* --- 新增的照片展示區樣式 --- */
+        .photo-frame {
+            width: 100%;
+            margin-bottom: 25px;
+            background-color: #2c2a29; /* 載入圖片時的深色底 */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08); /* 實體畫框陰影 */
+            border-radius: 2px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+        /* --------------------------- */
+
         .photo-title {
-            font-size: 1.1rem;
-            font-weight: 400;
+            font-size: 1.25rem;
+            font-weight: 600;
             margin-bottom: 15px;
             letter-spacing: 1px;
         }
@@ -114,29 +133,34 @@
             line-height: 1.8;
             color: #5c5a56;
             text-align: justify;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
+        }
+
+        /* 將按鈕置中 */
+        .btn-wrapper {
+            text-align: center;
         }
 
         .audio-btn {
             background: transparent;
             border: 1px solid var(--text-color);
             color: var(--text-color);
-            padding: 12px 30px;
+            padding: 12px 35px;
             font-size: 0.9rem;
             letter-spacing: 2px;
             cursor: pointer;
-            border-radius: 25px;
+            border-radius: 30px;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            min-width: 160px;
+            font-family: sans-serif;
         }
 
         .audio-btn:hover, .audio-btn:active {
             background: var(--text-color);
-            color: var(--bg-color);
+            color: #f4f1ea;
         }
 
         .audio-btn.playing {
@@ -151,14 +175,14 @@
             margin-top: 10px;
             display: none;
             letter-spacing: 1px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- 你的攝影集名稱 -->
-        <h1>攝影集名稱待定</h1>
+        <h1>還沒想好 之後再說</h1>
         <div class="subtitle">輸入照片編號，聆聽背後的故事</div>
 
         <div class="input-group">
@@ -167,31 +191,36 @@
         </div>
 
         <div id="storyCard" class="story-card">
+            <!-- 新增的照片展示區 HTML -->
+            <div class="photo-frame">
+                <img id="photoImage" src="" alt="攝影作品">
+            </div>
+            
             <div class="photo-title" id="photoTitle"></div>
             <div class="photo-desc" id="photoDesc"></div>
-            <button class="audio-btn" id="playBtn">
-                <span id="btnIcon">▶</span> <span id="btnText">播放故事</span>
-            </button>
+            
+            <div class="btn-wrapper">
+                <button class="audio-btn" id="playBtn">
+                    <span id="btnIcon">▶</span> <span id="btnText">播放故事</span>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 【第一步】在這裡設定你的照片編號、文字內容，以及對應的音檔路徑
+        // 【重要】這裡新增了 image 屬性，用來指定圖片路徑
         const photoStories = {
             "1": {
                 title: "01. 霧中的山脊",
                 text: "這張照片拍攝於清晨的中央山脈。當時氣溫很低，陽光突然穿透了雲層，短暫地照亮了這道山脊。",
-                audio: "audio/01.mp3"
+                audio: "audio/01.mp3",
+                image: "images/01.jpg" // 指向圖片資料夾中的相片
             },
             "2": {
                 title: "02. 暮色海岸",
                 text: "使用正片拍攝的黃昏。海浪拍打在岩石上，呈現出底片特有的神祕藍調。",
-                audio: "audio/02.mp3"
-            },
-            "3": {
-                title: "03. 城市的切片",
-                text: "午後的光線剛好穿過兩棟大樓的夾縫，投射在路人的肩頭。",
-                audio: "audio/03.mp3"
+                audio: "audio/02.mp3",
+                image: "images/02.jpg"
             }
         };
 
@@ -199,20 +228,19 @@
         const cardEl = document.getElementById('storyCard');
         const titleEl = document.getElementById('photoTitle');
         const descEl = document.getElementById('photoDesc');
+        const imgEl = document.getElementById('photoImage'); // 抓取圖片元素
         const errorEl = document.getElementById('errorMsg');
         const playBtn = document.getElementById('playBtn');
         const btnIcon = document.getElementById('btnIcon');
         const btnText = document.getElementById('btnText');
 
-        let currentAudio = null; // 儲存 HTML5 Audio 播放物件
+        let currentAudio = null; 
         let isPlaying = false;
         let currentPhotoId = null;
 
-        // 當使用者輸入數字時的邏輯
         inputEl.addEventListener('input', (e) => {
             const num = e.target.value.trim();
             
-            // 如果正在播放，換照片時先停止音樂
             if (isPlaying) stopAudio();
 
             if (num === "") {
@@ -223,6 +251,15 @@
 
             if (photoStories[num]) {
                 currentPhotoId = num;
+                
+                // 更新圖片來源
+                if (photoStories[num].image) {
+                    imgEl.src = photoStories[num].image;
+                    imgEl.style.display = 'block';
+                } else {
+                    imgEl.style.display = 'none';
+                }
+
                 titleEl.textContent = photoStories[num].title;
                 descEl.textContent = photoStories[num].text;
                 cardEl.classList.add('active');
@@ -234,7 +271,6 @@
             }
         });
 
-        // 點擊播放按鈕的邏輯
         playBtn.addEventListener('click', () => {
             if (!currentPhotoId || !photoStories[currentPhotoId]) return;
 
@@ -251,7 +287,6 @@
                 currentAudio.currentTime = 0;
             }
 
-            // 讀取並播放音檔
             currentAudio = new Audio(audioUrl);
             currentAudio.play().catch(e => {
                 alert("無法播放音檔，請確認 audio 資料夾與 mp3 檔案是否已正確上傳。");
@@ -263,7 +298,6 @@
             btnIcon.textContent = "■";
             btnText.textContent = "暫停播放";
 
-            // 播放結束時自動重置按鈕
             currentAudio.onended = () => {
                 stopAudio();
             };
