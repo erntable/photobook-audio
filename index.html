@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>攝影集語音導覽</title>
-    <!-- 引入 Google Fonts 思源黑體 -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -134,7 +133,6 @@
             margin-bottom: 30px;
         }
 
-        /* --- 進階播放器樣式 --- */
         .custom-player {
             width: 100%;
             display: flex;
@@ -168,13 +166,14 @@
             fill: currentColor;
         }
 
-        /* 自訂進度條 (Range Input) */
+        /* --- 修改後的進度條 --- */
         .progress-bar {
             flex-grow: 1;
             -webkit-appearance: none;
             appearance: none;
             height: 4px;
-            background: var(--border-color);
+            /* 透過 CSS 變數 `--progress` 來決定填滿的比例，左邊是深色，右邊是淺色 */
+            background: linear-gradient(to right, var(--text-color) var(--progress, 0%), var(--border-color) var(--progress, 0%));
             border-radius: 2px;
             outline: none;
             cursor: pointer;
@@ -267,15 +266,13 @@
             <div class="photo-title" id="photoTitle"></div>
             <div class="photo-desc" id="photoDesc"></div>
             
-            <!-- 進階播放器 HTML 結構 -->
             <div class="custom-player" id="customPlayer">
                 <div class="player-main-row">
                     <button class="play-pause-btn" id="playPauseBtn">
-                        <!-- 預設顯示播放 Icon -->
                         <svg id="iconPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        <!-- 暫停 Icon (先隱藏) -->
                         <svg id="iconPause" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
+                    <!-- 進度條 HTML 維持不變 -->
                     <input type="range" class="progress-bar" id="progressBar" value="0" min="0" max="100">
                     <div class="time-display" id="timeDisplay">00:00</div>
                 </div>
@@ -313,7 +310,6 @@
             }
         };
 
-        // DOM 元素抓取
         const inputEl = document.getElementById('photoNumber');
         const cardEl = document.getElementById('storyCard');
         const titleEl = document.getElementById('photoTitle');
@@ -321,7 +317,6 @@
         const imgEl = document.getElementById('photoImage');
         const errorEl = document.getElementById('errorMsg');
         
-        // 播放器控制元素
         const playPauseBtn = document.getElementById('playPauseBtn');
         const iconPlay = document.getElementById('iconPlay');
         const iconPause = document.getElementById('iconPause');
@@ -335,9 +330,8 @@
         let currentAudio = null; 
         let isPlaying = false;
         let currentPhotoId = null;
-        let isDragging = false; // 判斷使用者是否正在拖曳進度條
+        let isDragging = false; 
 
-        // 格式化時間 (將秒數轉為 MM:SS)
         function formatTime(seconds) {
             if (isNaN(seconds)) return "00:00";
             const m = Math.floor(seconds / 60);
@@ -345,7 +339,6 @@
             return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
-        // 切換按鈕的 UI 狀態
         function setPlayState(playing) {
             isPlaying = playing;
             if (playing) {
@@ -357,7 +350,6 @@
             }
         }
 
-        // 初始化或切換照片
         inputEl.addEventListener('input', (e) => {
             const num = e.target.value.trim();
             
@@ -375,7 +367,6 @@
             if (photoStories[num]) {
                 currentPhotoId = num;
                 
-                // 圖片處理
                 if (photoStories[num].image) {
                     imgEl.src = photoStories[num].image;
                     imgEl.style.display = 'block';
@@ -383,13 +374,14 @@
                     imgEl.style.display = 'none';
                 }
 
-                // 文字與進度條初始化
                 titleEl.textContent = photoStories[num].title;
                 descEl.textContent = photoStories[num].text;
+                
+                // 重置進度條數值與顏色比例
                 progressBar.value = 0;
+                progressBar.style.setProperty('--progress', '0%');
                 timeDisplay.textContent = "00:00";
                 
-                // 預載入新的音檔以獲取總長度 (但不自動播放)
                 loadNewAudio(photoStories[num].audio);
 
                 cardEl.classList.add('active');
@@ -401,32 +393,30 @@
             }
         });
 
-        // 載入音檔並綁定事件
         function loadNewAudio(url) {
             currentAudio = new Audio(url);
             
-            // 當音樂播放位置更新時，連動進度條
             currentAudio.addEventListener('timeupdate', () => {
                 if (!isDragging && !isNaN(currentAudio.duration)) {
                     const progressPercent = (currentAudio.currentTime / currentAudio.duration) * 100;
                     progressBar.value = progressPercent;
+                    // 同步更新 CSS 的填滿比例
+                    progressBar.style.setProperty('--progress', `${progressPercent}%`);
                     timeDisplay.textContent = formatTime(currentAudio.currentTime);
                 }
             });
 
-            // 播放完畢自動重置
             currentAudio.addEventListener('ended', () => {
                 setPlayState(false);
                 currentAudio.currentTime = 0;
                 progressBar.value = 0;
+                progressBar.style.setProperty('--progress', '0%');
             });
 
-            // 套用目前的語速設定
             const currentSpeed = speed15Btn.classList.contains('active') ? 1.5 : 1;
             currentAudio.playbackRate = currentSpeed;
         }
 
-        // 主播放/暫停按鈕邏輯
         playPauseBtn.addEventListener('click', () => {
             if (!currentAudio) return;
             
@@ -441,9 +431,11 @@
             }
         });
 
-        // 進度條拖曳邏輯
+        // 當使用者拖曳時，即時更新填滿的顏色與時間
         progressBar.addEventListener('input', () => {
             isDragging = true;
+            progressBar.style.setProperty('--progress', `${progressBar.value}%`);
+            
             if (currentAudio && !isNaN(currentAudio.duration)) {
                 const seekTime = (progressBar.value / 100) * currentAudio.duration;
                 timeDisplay.textContent = formatTime(seekTime);
@@ -458,7 +450,6 @@
             }
         });
 
-        // 快轉與倒退 10 秒
         rewindBtn.addEventListener('click', () => {
             if (currentAudio) currentAudio.currentTime = Math.max(0, currentAudio.currentTime - 10);
         });
@@ -469,7 +460,6 @@
             }
         });
 
-        // 語速控制
         function setSpeed(speed) {
             if (currentAudio) currentAudio.playbackRate = speed;
             if (speed === 1) {
