@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto Nube - 攝影集語音導覽</title>
+    <style>
+        :root {
+            /* 底片攝影集風格配色 */
+            --bg-color: #f4f1ea;     /* 溫潤的相紙微黃色 */
+            --text-color: #3b3a36;   /* 柔和的深灰，降低數位感 */
+            --accent-color: #d97736; /* 類似 Gold 200 的暖橘黃色 */
+            --border-color: #dcd8ce;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 400;
+            letter-spacing: 5px;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: #85827d;
+            margin-bottom: 45px;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            background: transparent;
+            text-align: center;
+            outline: none;
+            letter-spacing: 2px;
+            transition: border-color 0.3s;
+            color: var(--text-color);
+        }
+
+        input[type="number"]:focus {
+            border-bottom: 1px solid var(--accent-color);
+        }
+
+        /* 隱藏數字輸入框的上下箭頭 */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .story-card {
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease;
+            min-height: 150px;
+            display: none;
+        }
+
+        .story-card.active {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        .photo-title {
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .photo-desc {
+            font-size: 0.95rem;
+            font-weight: 300;
+            line-height: 1.8;
+            color: #5c5a56;
+            text-align: justify;
+            margin-bottom: 25px;
+        }
+
+        .audio-btn {
+            background: transparent;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 12px 30px;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 160px;
+        }
+
+        .audio-btn:hover, .audio-btn:active {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .audio-btn.playing {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .error-msg {
+            color: #c96558;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 你的攝影集名稱 -->
+        <h1>Proyecto Nube</h1>
+        <div class="subtitle">輸入照片編號，聆聽背後的故事</div>
+
+        <div class="input-group">
+            <input type="number" id="photoNumber" placeholder="— 請輸入編號 —" inputmode="numeric">
+            <div id="errorMsg" class="error-msg">未找到該編號的照片</div>
+        </div>
+
+        <div id="storyCard" class="story-card">
+            <div class="photo-title" id="photoTitle"></div>
+            <div class="photo-desc" id="photoDesc"></div>
+            <button class="audio-btn" id="playBtn">
+                <span id="btnIcon">▶</span> <span id="btnText">播放故事</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 【第一步】在這裡設定你的照片編號、文字內容，以及對應的音檔路徑
+        const photoStories = {
+            "1": {
+                title: "01. 霧中的山脊",
+                text: "這張照片拍攝於清晨的中央山脈。當時氣溫很低，陽光突然穿透了雲層，短暫地照亮了這道山脊。",
+                audio: "audio/01.mp3"
+            },
+            "2": {
+                title: "02. 暮色海岸",
+                text: "使用正片拍攝的黃昏。海浪拍打在岩石上，呈現出底片特有的神祕藍調。",
+                audio: "audio/02.mp3"
+            },
+            "3": {
+                title: "03. 城市的切片",
+                text: "午後的光線剛好穿過兩棟大樓的夾縫，投射在路人的肩頭。",
+                audio: "audio/03.mp3"
+            }
+        };
+
+        const inputEl = document.getElementById('photoNumber');
+        const cardEl = document.getElementById('storyCard');
+        const titleEl = document.getElementById('photoTitle');
+        const descEl = document.getElementById('photoDesc');
+        const errorEl = document.getElementById('errorMsg');
+        const playBtn = document.getElementById('playBtn');
+        const btnIcon = document.getElementById('btnIcon');
+        const btnText = document.getElementById('btnText');
+
+        let currentAudio = null; // 儲存 HTML5 Audio 播放物件
+        let isPlaying = false;
+        let currentPhotoId = null;
+
+        // 當使用者輸入數字時的邏輯
+        inputEl.addEventListener('input', (e) => {
+            const num = e.target.value.trim();
+            
+            // 如果正在播放，換照片時先停止音樂
+            if (isPlaying) stopAudio();
+
+            if (num === "") {
+                cardEl.classList.remove('active');
+                errorEl.style.display = 'none';
+                return;
+            }
+
+            if (photoStories[num]) {
+                currentPhotoId = num;
+                titleEl.textContent = photoStories[num].title;
+                descEl.textContent = photoStories[num].text;
+                cardEl.classList.add('active');
+                errorEl.style.display = 'none';
+            } else {
+                currentPhotoId = null;
+                cardEl.classList.remove('active');
+                errorEl.style.display = 'block';
+            }
+        });
+
+        // 點擊播放按鈕的邏輯
+        playBtn.addEventListener('click', () => {
+            if (!currentPhotoId || !photoStories[currentPhotoId]) return;
+
+            if (isPlaying) {
+                stopAudio();
+            } else {
+                playAudio(photoStories[currentPhotoId].audio);
+            }
+        });
+
+        function playAudio(audioUrl) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+
+            // 讀取並播放音檔
+            currentAudio = new Audio(audioUrl);
+            currentAudio.play().catch(e => {
+                alert("無法播放音檔，請確認 audio 資料夾與 mp3 檔案是否已正確上傳。");
+                stopAudio();
+            });
+
+            isPlaying = true;
+            playBtn.classList.add('playing');
+            btnIcon.textContent = "■";
+            btnText.textContent = "暫停播放";
+
+            // 播放結束時自動重置按鈕
+            currentAudio.onended = () => {
+                stopAudio();
+            };
+        }
+
+        function stopAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+            }
+            isPlaying = false;
+            playBtn.classList.remove('playing');
+            btnIcon.textContent = "▶";
+            btnText.textContent = "播放故事";
+        }
+    </script>
+</body>
+</html>
