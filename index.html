@@ -22,12 +22,7 @@
         }
 
        body {
-            /* 1. 設定微黃底色 */
             background-color: var(--bg-color);
-            /* 2. 加上極細微的點點紋理 (類似北美館風格) */
-            background-image: radial-gradient(#dcd8ce 1px, transparent 1px);
-            background-size: 8px 8px; /* 點點的密集度 */
-            
             color: var(--text-color);
             display: flex;
             flex-direction: column;
@@ -101,13 +96,6 @@
             transition: all 0.6s ease;
             display: none;
             text-align: left;
-            
-            /* 新增：為內容區塊加上微透的底色與圓角，讓點點背景不會干擾文字閱讀 */
-            background-color: rgba(244, 241, 234, 0.85); /* 85% 不透明度的底色 */
-            backdrop-filter: blur(4px); /* 微微的毛玻璃效果 */
-            padding: 20px; /* 撐開內部空間 */
-            border-radius: 6px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02); /* 極淡的陰影，增加紙張懸浮感 */
         }
         
         .story-card.active {
